@@ -11,17 +11,17 @@
 // Example incoming serial string from device: 
 // $,winddir=270,windspeedmph=0.0,windgustmph=0.0,windgustdir=0,windspdmph_avg2m=0.0,winddir_avg2m=12,windgustmph_10m=0.0,windgustdir_10m=0,humidity=998.0,tempf=-1766.2,rainin=0.00,dailyrainin=0.00,pressure=-999.00,batt_lvl=16.11,light_lvl=3.32,#
 
-local STATION_ID = "KCOBOULD95";
+local STATION_ID = "KNVBLUED2";
 local STATION_PW = "password"; //Note that you must only use alphanumerics in your password. Http post won't work otherwise.
 
-local sparkfun_publicKey = "dZ4EVmE8yGCRGx5XRX1W";
+local sparkfun_publicKey = "pwOJbp8j4bs676roygJQ";
 local sparkfun_privateKey = "privatekey";
 
-local LOCAL_ALTITUDE_METERS = 1638; //Accurate for the roof on my house
+local LOCAL_ALTITUDE_METERS = 1033; //Accurate for the roof on my house
 
 local midnightReset = false; //Keeps track of a once per day cumulative rain reset
 
-local local_hour_offset = 7; //Mountain time is 7 hours off GMT
+local local_hour_offset = 8; //Pacific time is 8 hours off GMT
 
 const MAX_PROGRAM_SIZE = 0x20000;
 const ARDUINO_BLOB_SIZE = 128;
@@ -311,10 +311,10 @@ device.on("postToInternet", function(dataString) {
 
     //Form the current date/time
     //Note: .month is 0 to 11!
-    local currentTime = date(time(), 'u');
-    local strCT = "dateutc=";
-    strCT += currentTime.year + "-" + format("%02d", currentTime.month + 1) + "-" + format("%02d", currentTime.day);
-    strCT += "+" + format("%02d", currentTime.hour) + "%3A" + format("%02d", currentTime.min) + "%3A" + format("%02d", currentTime.sec);
+local currentTime = date(time(), 'u');
+local strCT = "dateutc=";
+strCT += currentTime.year + "-" + format("%02d", currentTime.month + 1) + "-" + format("%02d", currentTime.day);
+strCT += "+" + format("%02d", currentTime.hour) + "%3A" + format("%02d", currentTime.min) + "%3A" + format("%02d", currentTime.sec);
     //Not sure if wunderground expects the + or a %2B. We shall see.
     //server.log(strCT);
 
@@ -338,12 +338,12 @@ device.on("postToInternet", function(dataString) {
     bigString += "&" + dewptf;
     //bigString += "&" + weather;
     //bigString += "&" + clouds;
-    bigString += "&" + "softwaretype=SparkFunWeatherImp"; //Cause we can
+    bigString += "&" + "softwaretype=ModifiedWeatherImp"; //Cause we can
     bigString += "&" + "realtime=1"; //You better believe it!
-    bigString += "&" + "rtfreq=10"; //Set rapid fire freq to once every 10 seconds
+    bigString += "&" + "rtfreq=60"; //Set rapid fire freq to once every 10 seconds
     bigString += "&" + "action=updateraw";
 
-    //server.log("string to send: " + bigString);
+    server.log("string to send: " + bigString);
     
     //Push to Wunderground
     local request = http.post(bigString, {}, "");
@@ -352,7 +352,7 @@ device.on("postToInternet", function(dataString) {
     server.log(batt_lvl + " " + light_lvl);
 
     //Get the local time that this measurement was taken
-    local localMeasurementTime = "measurementTime=" + calcLocalTime();
+    local localMeasurementTime = "measurementtime=" + calcLocalTime();
 
     //Now post to data.sparkfun.com
     //Here is a list of datums: measurementTime, winddir, windspeedmph, windgustmph, windgustdir, windspdmph_avg2m, winddir_avg2m, windgustmph_10m, windgustdir_10m, humidity, tempf, rainin, dailyrainin, baromin, dewptf, batt_lvl, light_lvl
@@ -385,6 +385,9 @@ device.on("postToInternet", function(dataString) {
     //Push to SparkFun
     local request = http.get(bigString);
     local response = request.sendsync();
+    
+    server.log("string to send: " + bigString);
+    
     server.log("SparkFun response = " + response.body);
 
     //Check to see if we need to send a midnight reset
@@ -400,7 +403,7 @@ function windCorrect(direction) {
 
     //My station's North arrow is pointing due west
     //So correct by 90 degrees
-    local dir = temp[1].tointeger() - 90; 
+    local dir = temp[1].tointeger() - 0; 
     if(dir < 0) dir += 360;
     return(temp[0] + "=" + dir);
 }
@@ -420,8 +423,8 @@ function calcDewPoint(relativeHumidity, tempF) {
     //Convert back to F
     dewPoint = dewPoint * 9 / 5.0 + 32;
 
-    //server.log("rh=" + relativeHumidity + " tempF=" + tempF + " tempC=" + tempC);
-    //server.log("DewPoint = " + dewPoint);
+    server.log("rh=" + relativeHumidity + " tempF=" + tempF + " tempC=" + tempC);
+    server.log("DewPoint = " + dewPoint);
     return(dewPoint);
 }
 
@@ -431,7 +434,7 @@ function checkMidnight(ignore) {
     //Get the local time that this measurement was taken
     local localTime = calcLocalTime(); 
     
-    //server.log("Local hour = " + format("%c", localTime[0]) + format("%c", localTime[1]));
+    server.log("Local hour = " + format("%c", localTime[0]) + format("%c", localTime[1]));
 
     if(localTime[0].tochar() == "0" && localTime[1].tochar() == "4")
     {
@@ -455,7 +458,7 @@ function checkMidnight(ignore) {
 function recordLevels(batt, light) {
     
     //Smash it all together
-    local stringToSend = "http://api.pushingbox.com/pushingbox?devid=vB0A3446EBB4828F";
+    local stringToSend = "http://api.pushingbox.com/pushingbox?devid=";
     stringToSend = stringToSend + "&" + batt; 
     stringToSend = stringToSend + "&" + light;
     //server.log("string to send: " + stringToSend); //Debugging
@@ -556,7 +559,7 @@ function calcLocalTime()
     if(hour == 0) hour = 12; //Midnight edge case
 
     currentTime = format("%02d", hour) + "%3A" + format("%02d", currentTime.min) + "%3A" + format("%02d", currentTime.sec) + "%20" + AMPM;
-    //server.log("Local time: " + currentTime);
+    server.log("Local time: " + currentTime);
     return(currentTime);
 }
 
