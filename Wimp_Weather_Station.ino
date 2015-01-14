@@ -1,6 +1,7 @@
 /* 
+ Revision: 1.13.15
  Weather Station using the Electric Imp
- By: Nathan Seidle
+ Fork of Nathan Seidle Git of
  SparkFun Electronics
  Date: October 4th, 2013
  License: This code is public domain but you buy me a beer if you use this and we meet someday (Beerware license).
