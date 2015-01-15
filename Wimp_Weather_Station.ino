@@ -42,12 +42,12 @@ HTU21D myHumidity; //Create an instance of the humidity sensor
 // digital I/O pins
 const byte WSPEED = 3;
 const byte RAIN = 2;
-const byte STAT1 = 7;
+const byte LED1 = 7;
 
-#ifdef ENABLE_LIGHTNING
-const byte LIGHTNING_IRQ = 4; //Not really an interrupt pin, we will catch it in software
-const byte slaveSelectPin = 10; //SS for AS3935
-#endif
+//#ifdef ENABLE_LIGHTNING
+//const byte LIGHTNING_IRQ = 4; //Not really an interrupt pin, we will catch it in software
+//const byte slaveSelectPin = 10; //SS for AS3935
+//#endif
 
 // analog I/O pins
 const byte WDIR = A0;
@@ -56,14 +56,14 @@ const byte BATT = A2;
 const byte REFERENCE_3V3 = A3;
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-#ifdef ENABLE_LIGHTNING
-#include "AS3935.h" //Lighting dtector
-#include <SPI.h> //Needed for lighting sensor
+//#ifdef ENABLE_LIGHTNING
+//#include "AS3935.h" //Lighting dtector
+//#include <SPI.h> //Needed for lighting sensor
 
-byte SPItransfer(byte sendByte);
+//byte SPItransfer(byte sendByte);
 
-AS3935 AS3935(SPItransfer, slaveSelectPin, LIGHTNING_IRQ);
-#endif
+//AS3935 AS3935(SPItransfer, slaveSelectPin, LIGHTNING_IRQ);
+//#endif
 
 //Global Variables
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -78,9 +78,9 @@ long lastWindCheck = 0;
 volatile long lastWindIRQ = 0;
 volatile byte windClicks = 0;
 
-#ifdef ENABLE_LIGHTNING
-byte lightning_distance = 0;
-#endif
+//#ifdef ENABLE_LIGHTNING
+//byte lightning_distance = 0;
+//#endif
 
 //We need to keep track of the following variables:
 //Wind speed/dir each update (no storage)
@@ -160,12 +160,12 @@ void setup()
   pinMode(WSPEED, INPUT_PULLUP); // input from wind meters windspeed sensor
   pinMode(RAIN, INPUT_PULLUP); // input from wind meters rain gauge sensor
 
-  pinMode(WDIR, INPUT);
-  pinMode(LIGHT, INPUT);
-  pinMode(BATT, INPUT);
-  pinMode(REFERENCE_3V3, INPUT);
+  pinMode(WDIR, INPUT);  // A0
+  pinMode(LIGHT, INPUT);  // A1
+  pinMode(BATT, INPUT);  // A2
+  pinMode(REFERENCE_3V3, INPUT);  // A3
 
-  pinMode(STAT1, OUTPUT);
+  pinMode(LED1, OUTPUT);  // Pin 7
 
   midnightReset(); //Reset rain totals
 
@@ -196,7 +196,7 @@ void setup()
   Serial.println("Wimp Weather Station online!");
   reportWeather();
 
-  //  wdt_enable(WDTO_1S); //Unleash the beast
+  wdt_enable(WDTO_1S); //Unleash the beast
 }
 
 void loop()
@@ -216,6 +216,12 @@ void loop()
     winddir = get_wind_direction();
     windspdavg[seconds_2m] = (int)windspeedmph;
     winddiravg[seconds_2m] = winddir;
+    /*OLD
+    float currentSpeed = get_wind_speed();
+    int currentDirection = get_wind_direction();
+    windspdavg[seconds_2m] = (int)currentSpeed;
+    winddiravg[seconds_2m] = currentDirection;
+    */
     //if(seconds_2m % 10 == 0) displayArrays();
 
     //Check to see if this is a gust for the minute
@@ -234,10 +240,10 @@ void loop()
     }
 
     //Blink stat LED briefly to show we are alive
-    digitalWrite(STAT1, HIGH);
+    digitalWrite(LED1, HIGH);
     //reportWeather(); //Print the current readings. Takes 172ms.
     delay(25);
-    digitalWrite(STAT1, LOW);
+    digitalWrite(LED1, LOW);
 
     //If we roll over 60 seconds then update the arrays for rain and windgust
     if(++seconds > 59)
@@ -254,6 +260,8 @@ void loop()
     }
   }
   
+  /*
+  
   //Check to see if there's been lighting
 #ifdef ENABLE_LIGHTNING
   if(digitalRead(LIGHTNING_IRQ) == HIGH)
@@ -262,7 +270,7 @@ void loop()
     lightning_distance = readLightning();
   }
 #endif
-  
+  */
 
   //Wait for the imp to ping us with the ! character
   if(Serial.available())
@@ -273,11 +281,13 @@ void loop()
       reportWeather(); //Send all the current readings out the imp and to its agent for posting to wunderground. Takes 196ms
       //Serial.print("Pinged!");
       
+/*
 #ifdef ENABLE_LIGHTNING
       //Give imp time to transmit then read any erroneous lightning strike
       delay(1000); //Give the Imp time to transmit 
       readLightning(); //Clear any readings and forget it
 #endif
+*/
       
     }
     else if(incoming == '@') //Special character from Imp indicating midnight local time
@@ -297,7 +307,7 @@ void loop()
   if(minutesSinceLastReset > (1440 + 10))
   {
     midnightReset(); //Reset a bunch of variables like rain and daily total rain
-    //Serial.print("Emergency midnight reset");
+    Serial.print("Emergency midnight reset");
   }
 
   delay(100); //Update every 100ms. No need to go any faster.
@@ -544,16 +554,18 @@ void reportWeather()
   Serial.print(",light_lvl=");
   Serial.print(light_lvl, 2);
 
+/*
 #ifdef LIGHTNING_ENABLED
   Serial.print(",lightning_distance=");
   Serial.print(lightning_distance);
 #endif
+*/
 
   Serial.print(",");
   Serial.println("#,");
 
   //Test string
-  //Serial.println("$,winddir=270,windspeedmph=0.0,windgustmph=0.0,windgustdir=0,windspdmph_avg2m=0.0,winddir_avg2m=12,windgustmph_10m=0.0,windgustdir_10m=0,humidity=998.0,tempf=-1766.2,rainin=0.00,dailyrainin=0.00,-999.00,batt_lvl=16.11,light_lvl=3.32,#,");
+  Serial.println("$,winddir=270,windspeedmph=0.0,windgustmph=0.0,windgustdir=0,windspdmph_avg2m=0.0,winddir_avg2m=12,windgustmph_10m=0.0,windgustdir_10m=0,humidity=998.0,tempf=-1766.2,rainin=0.00,dailyrainin=0.00,-999.00,batt_lvl=16.11,light_lvl=3.32,#,");
 }
 
 //Takes an average of readings on a given pin
@@ -570,6 +582,7 @@ int averageAnalogRead(int pinToRead)
   return(runningValue);  
 }
 
+/*
 //The following is for the AS3935 lightning sensor
 #ifdef ENABLE_LIGHTNING
 byte readLightning(void)
@@ -652,6 +665,7 @@ void lightning_init()
 
   //printAS3935Registers();
 }
+*/
 
 /*void printAS3935Registers()
 {
@@ -665,12 +679,14 @@ void lightning_init()
   Serial.print("Watchdog threshold is: ");
   Serial.println(watchdogThreshold, DEC);  
 }*/
-
+/*
 byte SPItransfer(byte sendByte)
 {
   return SPI.transfer(sendByte);
 }
 #endif
+*/
+
 
 
 
