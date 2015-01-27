@@ -9,13 +9,13 @@
 //          If you find it handy, and we meet some day, you can buy me a beer or iced tea in return.
 
 // Example incoming serial string from device: 
-// $,winddir=270,windspeedmph=0.0,windgustmph=0.0,windgustdir=0,windspdmph_avg2m=0.0,winddir_avg2m=12,windgustmph_10m=0.0,windgustdir_10m=0,humidity=998.0,tempf=-1766.2,rainin=0.00,dailyrainin=0.00,pressure=-999.00,batt_lvl=16.11,light_lvl=3.32,#
+//$,winddir=270,windspeedmph=0.0,windgustmph=0.0,windgustdir=0,windspdmph_avg2m=0.0,winddir_avg2m=12,windgustmph_10m=0.0,windgustdir_10m=0,humidity=998.0,tempf=-1766.2,rainin=0.00,dailyrainin=0.00,pressure=-999.00,batt_lvl=16.11,light_lvl=3.32,#
 
 local STATION_ID = "KNVBLUED2";
-local STATION_PW = "password"; //Note that you must only use alphanumerics in your password. Http post won't work otherwise.
+local STATION_PW = "dResden23"; //Note that you must only use alphanumerics in your password. Http post won't work otherwise.
 
 local sparkfun_publicKey = "pwOJbp8j4bs676roygJQ";
-local sparkfun_privateKey = "privatekey";
+local sparkfun_privateKey = "645y0W9Vx0uz5zP6qjba";
 
 local LOCAL_ALTITUDE_METERS = 1033; //Accurate for the roof on my house
 
@@ -28,7 +28,9 @@ const ARDUINO_BLOB_SIZE = 128;
 program <- null;
 
 //------------------------------------------------------------------------------------------------------------------------------
-html <- @"<HTML>
+html 
+<- @"
+<HTML>
 <BODY>
 
 <form method='POST' enctype='multipart/form-data'>
@@ -44,7 +46,8 @@ Step 3: Check out your Arduino<br/>
 
 //------------------------------------------------------------------------------------------------------------------------------
 // Parses a HTTP POST in multipart/form-data format
-function parse_hexpost(req, res) {
+function parse_hexpost(req, res) 
+{
     local boundary = req.headers["content-type"].slice(30);
     local bindex = req.body.find(boundary);
     local hstart = bindex + boundary.len();
@@ -56,13 +59,17 @@ function parse_hexpost(req, res) {
 
 //------------------------------------------------------------------------------------------------------------------------------
 // Parses a hex string and turns it into an integer
-function hextoint(str) {
+function hextoint(str) 
+{
     local hex = 0x0000;
-    foreach (ch in str) {
+    foreach (ch in str) 
+    {
         local nibble;
-        if (ch >= '0' && ch <= '9') {
+        if (ch >= '0' && ch <= '9') 
+        {
             nibble = (ch - '0');
-        } else {
+        } else 
+        {
             nibble = (ch - 'A' + 10);
         }
         hex = (hex << 4) + nibble;
@@ -70,32 +77,38 @@ function hextoint(str) {
     return hex;
 }
 
-
 //------------------------------------------------------------------------------------------------------------------------------
 // Breaks the program into chunks and sends it to the device
-function send_program() {
-    if (program != null && program.len() > 0) {
+function send_program() 
+{
+    if (program != null && program.len() > 0) 
+    {
         local addr = 0;
         local pline = {};
         local max_addr = program.len();
         
         device.send("burn", {first=true});
-        while (addr < max_addr) {
+        while (addr < max_addr) 
+        {
             program.seek(addr);
             pline.data <- program.readblob(ARDUINO_BLOB_SIZE);
             pline.addr <- addr / 2; // Address space is 16-bit
             device.send("burn", pline)
+            server.log("burn: " + pline)
             addr += pline.data.len();
         }
         device.send("burn", {last=true});
+        server.log("finished, sending 'burn, last=true' to device")
     }
 }        
 
 //------------------------------------------------------------------------------------------------------------------------------
 // Parse the hex into an array of blobs
-function parse_hexfile(hex) {
+function parse_hexfile(hex) 
+{
     
-    try {
+    try 
+    {
         // Look at this doc to work out what we need and don't. Max is about 122kb.
         // https://bluegiga.zendesk.com/entries/42713448--REFERENCE-Updating-BLE11x-firmware-using-UART-DFU
         server.log("Parsing hex file");
@@ -106,7 +119,8 @@ function parse_hexfile(hex) {
         program.seek(0);
         
         local maxaddress = 0, from = 0, to = 0, line = "", offset = 0x00000000;
-        do {
+        do 
+        {
             if (to < 0 || to == null || to >= hex.len()) break;
             from = hex.find(":", to);
             
@@ -115,32 +129,38 @@ function parse_hexfile(hex) {
             
             if (to < 0 || to == null || from >= to || to >= hex.len()) break;
             line = hex.slice(from+1, to);
-            // server.log(format("[%d,%d] => %s", from, to, line));
+            server.log(format("[%d,%d] => %s", from, to, line));
             
-            if (line.len() > 10) {
+            if (line.len() > 10) 
+            {
                 local len = hextoint(line.slice(0, 2));
                 local addr = hextoint(line.slice(2, 6));
                 local type = hextoint(line.slice(6, 8));
 
                 // Ignore all record types except 00, which is a data record. 
                 // Look out for 02 records which set the high order byte of the address space
-                if (type == 0) {
+                if (type == 0) 
+                {
                     // Normal data record
-                } else if (type == 4 && len == 2 && addr == 0 && line.len() > 12) {
+                } else if (type == 4 && len == 2 && addr == 0 && line.len() > 12) 
+                {
                     // Set the offset
                     offset = hextoint(line.slice(8, 12)) << 16;
-                    if (offset != 0) {
+                    if (offset != 0) 
+                    {
                         server.log(format("Set offset to 0x%08X", offset));
                     }
                     continue;
-                } else {
+                } else 
+                {
                     server.log("Skipped: " + line)
                     continue;
                 }
 
                 // Read the data from 8 to the end (less the last checksum byte)
                 program.seek(offset + addr)
-                for (local i = 8; i < 8+(len*2); i+=2) {
+                for (local i = 8; i < 8+(len*2); i+=2) 
+                {
                     local datum = hextoint(line.slice(i, i+2));
                     program.writen(datum, 'b')
                 }
@@ -150,7 +170,6 @@ function parse_hexfile(hex) {
                 
                 /// Shift the end point forward
                 if (program.tell() > maxaddress) maxaddress = program.tell();
-                
             }
         } while (from != null && to != null && from < to);
 
@@ -161,7 +180,8 @@ function parse_hexfile(hex) {
         server.log("Free RAM: " + (imp.getmemoryfree()/1024) + " kb")
         return true;
         
-    } catch (e) {
+    } catch (e) 
+    {
         server.log(e)
         return false;
     }
@@ -171,22 +191,29 @@ function parse_hexfile(hex) {
 
 //------------------------------------------------------------------------------------------------------------------------------
 // Handle the agent requests
-http.onrequest(function (req, res) {
+http.onrequest(function (req, res) 
+{
     // return res.send(400, "Bad request");
-    // server.log(req.method + " to " + req.path)
-    if (req.method == "GET") {
+    server.log(req.method + " to " + req.path)
+    if (req.method == "GET") 
+    {
         res.send(200, html);
-    } else if (req.method == "POST") {
-
-        if ("content-type" in req.headers) {
+    } else if (req.method == "POST") 
+    {
+        if ("content-type" in req.headers) 
+        {
             if (req.headers["content-type"].len() >= 19
-             && req.headers["content-type"].slice(0, 19) == "multipart/form-data") {
+            && req.headers["content-type"].slice(0, 19) == "multipart/form-data") 
+            {
                 local hex = parse_hexpost(req, res);
-                if (hex == "") {
+                if (hex == "") 
+                {
                     res.header("Location", http.agenturl());
                     res.send(302, "HEX file uploaded");
-                } else {
-                    device.on("done", function(ready) {
+                } else 
+                {
+                    device.on("done", function(ready) 
+                    {
                         res.header("Location", http.agenturl());
                         res.send(302, "HEX file uploaded");                        
                         server.log("Programming completed")
@@ -194,30 +221,39 @@ http.onrequest(function (req, res) {
                     server.log("Programming started")
                     parse_hexfile(hex);
                 }
-            } else if (req.headers["content-type"] == "application/json") {
+            } else if (req.headers["content-type"] == "application/json") 
+            {
                 local json = null;
-                try {
+                try 
+                {
                     json = http.jsondecode(req.body);
-                } catch (e) {
+                } catch (e) 
+                {
                     server.log("JSON decoding failed for: " + req.body);
                     return res.send(400, "Invalid JSON data");
                 }
                 local log = "";
-                foreach (k,v in json) {
-                    if (typeof v == "array" || typeof v == "table") {
-                        foreach (k1,v1 in v) {
+                foreach (k,v in json) 
+                {
+                    if (typeof v == "array" || typeof v == "table") 
+                    {
+                        foreach (k1,v1 in v) 
+                        {
                             log += format("%s[%s] => %s, ", k, k1, v1.tostring());
                         }
-                    } else {
+                    } else 
+                    {
                         log += format("%s => %s, ", k, v.tostring());
                     }
                 }
                 server.log(log)
                 return res.send(200, "OK");
-            } else {
+            } else 
+            {
                 return res.send(400, "Bad request");
             }
-        } else {
+        } else 
+        {
             return res.send(400, "Bad request");
         }
     }
@@ -226,7 +262,8 @@ http.onrequest(function (req, res) {
 
 //------------------------------------------------------------------------------------------------------------------------------
 // Handle the device coming online
-device.on("ready", function(ready) {
+device.on("ready", function(ready) 
+{
     if (ready) send_program();
 });
 
@@ -234,9 +271,10 @@ device.on("ready", function(ready) {
 
 
 // When we hear something from the device, split it apart and post it
-device.on("postToInternet", function(dataString) {
+device.on("postToInternet", function(dataString) 
+{
     
-    //server.log("Incoming: " + dataString);
+    server.log("Incoming: " + dataString);
     
     //Break the incoming string into pieces by comma
     a <- mysplit(dataString,',');
@@ -272,11 +310,12 @@ device.on("postToInternet", function(dataString) {
     
     //Correct for the actual orientation of the weather station
     //For my station the north indicator is pointing due west
-    winddir = windCorrect(winddir);
+    /*
+	winddir = windCorrect(winddir);
     windgustdir = windCorrect(windgustdir);
     winddir_avg2m = windCorrect(winddir_avg2m);
     windgustdir_10m = windCorrect(windgustdir_10m);
-
+	*/
     //Correct for negative temperatures. This is fixed in the latest libraries: https://learn.sparkfun.com/tutorials/mpl3115a2-pressure-sensor-hookup-guide
     currentTemp <- mysplit(tempf, '=');
     local badTempf = currentTemp[1].tointeger();
@@ -398,7 +437,9 @@ strCT += "+" + format("%02d", currentTime.hour) + "%3A" + format("%02d", current
 
 //Given a string, break out the direction, correct by some value
 //Return a string
-function windCorrect(direction) {
+/*
+function windCorrect(direction) 
+{
     temp <- mysplit(direction, '=');
 
     //My station's North arrow is pointing due west
@@ -407,10 +448,11 @@ function windCorrect(direction) {
     if(dir < 0) dir += 360;
     return(temp[0] + "=" + dir);
 }
-
+*/
 //With relative humidity and temp, calculate a dew point
 //From: http://ag.arizona.edu/azmet/dewpoint.html
-function calcDewPoint(relativeHumidity, tempF) {
+function calcDewPoint(relativeHumidity, tempF) 
+{
     local tempC = (tempF - 32) * 5 / 9.0;
 
     local L = math.log(relativeHumidity / 100.0);
@@ -428,9 +470,9 @@ function calcDewPoint(relativeHumidity, tempF) {
     return(dewPoint);
 }
 
-function checkMidnight(ignore) {
+function checkMidnight(ignore) 
+{
     //Check to see if it's midnight. If it is, send @ to Arduino to reset time based variables
-
     //Get the local time that this measurement was taken
     local localTime = calcLocalTime(); 
     
@@ -449,28 +491,26 @@ function checkMidnight(ignore) {
         midnightReset = false; //Reset our state
     }
 }
-    
+/*    
 //Recording to a google doc is a bit tricky. Many people have found ways of posting
 //to a google form to get data into a spreadsheet. This requires a https connection
 //so we use pushingbox to handle the secure connection.
 //See http://productforums.google.com/forum/#!topic/docs/f4hJKF1OQOw for more info
 //To push two items I had to use a GET instead of a post
-function recordLevels(batt, light) {
-    
+function recordLevels(batt, light) 
+{
     //Smash it all together
     local stringToSend = "http://api.pushingbox.com/pushingbox?devid=";
     stringToSend = stringToSend + "&" + batt; 
     stringToSend = stringToSend + "&" + light;
     //server.log("string to send: " + stringToSend); //Debugging
-    
     //Push to internet
     local request = http.post(stringToSend, {}, "");
     local response = request.sendsync();
     //server.log("Google response=" + response.body);
-    
     server.log("Post to spreadsheet complete.")
 }
-
+*/
 //Given pressure in pascals, convert the pressure to Altimeter Setting, inches mercury
 function convertToInHg(pressure_Pa)
 {
@@ -490,15 +530,19 @@ function convertToInHg(pressure_Pa)
 
 //From Hugo: http://forums.electricimp.com/discussion/915/processing-nmea-0183-gps-strings/p1
 //You rock! Thanks Hugo!
-function mysplit(a, b) {
+function mysplit(a, b) 
+{
   local ret = [];
   local field = "";
-  foreach(c in a) {
-      if (c == b) {
+  foreach(c in a) 
+  {
+      if (c == b) 
+      {
           // found separator, push field
           ret.push(field);
           field="";
-      } else {
+      } else 
+      {
           field += c.tochar(); // append to field
       }
    }
@@ -518,7 +562,6 @@ function calcLocalTime()
     //Since 2007 DST starts on the second Sunday in March and ends the first Sunday of November
     //Let's just assume it's going to be this way for awhile (silly US government!)
     //Example from: http://stackoverflow.com/questions/5590429/calculating-daylight-savings-time-from-only-date
-    
     //The Imp .month returns 0-11. DoW expects 1-12 so we add one.
     local month = currentTime.month + 1;
     
@@ -569,7 +612,6 @@ function calcLocalTime()
 //From: http://en.wikipedia.org/wiki/Calculating_the_day_of_the_week
 function day_of_week(year, month, day)
 {
-
   //offset = centuries table + year digits + year fractional + month lookup + date
   local centuries_table = 6; //We assume this code will only be used from year 2000 to year 2099
   local year_digits;
@@ -578,12 +620,12 @@ function day_of_week(year, month, day)
   local offset;
 
   //Example Feb 9th, 2011
-
   //First boil down year, example year = 2011
   year_digits = year % 100; //year_digits = 11
   year_fractional = year_digits / 4; //year_fractional = 2
 
-  switch(month) {
+  switch(month) 
+  {
   case 1: 
     month_lookup = 0; //January = 0
     break; 
@@ -624,7 +666,6 @@ function day_of_week(year, month, day)
     month_lookup = 0; //Error!
     return(-1);
   }
-
   offset = centuries_table + year_digits + year_fractional + month_lookup + day;
   //offset = 6 + 11 + 2 + 3 + 9 = 31
   offset %= 7; // 31 % 7 = 3 Wednesday!

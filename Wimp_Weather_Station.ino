@@ -180,15 +180,16 @@ void setup()
 
   //Configure the humidity sensor
   myHumidity.begin();
-  seconds = 0;
-  lastSecond = millis();
-
+  
   /*
   #ifdef ENABLE_LIGHTNING
     startLightning(); //Init the lighting sensor
   #endif
   */
   
+  seconds = 0;
+  lastSecond = millis();
+
   // attach external interrupt pins to IRQ functions
   attachInterrupt(0, rainIRQ, FALLING);
   attachInterrupt(1, wspeedIRQ, FALLING);
@@ -219,12 +220,6 @@ void loop()
     winddir = get_wind_direction();
     windspdavg[seconds_2m] = (int)windspeedmph;
     winddiravg[seconds_2m] = winddir;
-    /*OLD
-    float currentSpeed = get_wind_speed();
-    int currentDirection = get_wind_direction();
-    windspdavg[seconds_2m] = (int)currentSpeed;
-    winddiravg[seconds_2m] = currentDirection;
-    */
     //if(seconds_2m % 10 == 0) displayArrays();
 
     //Check to see if this is a gust for the minute
@@ -296,11 +291,11 @@ void loop()
     else if(incoming == '@') //Special character from Imp indicating midnight local time
     {
       midnightReset(); //Reset a bunch of variables like rain and daily total rain
-      //Serial.print("Midnight reset");
+      Serial.print("Midnight reset");
     }
     else if(incoming == '#') //Special character from Imp indicating a hardware reset
     {
-      //Serial.print("Watchdog reset");
+      Serial.print("Watchdog reset");
       delay(5000); //This will cause the system to reset because we don't pet the dog
     }
   }
@@ -332,10 +327,11 @@ void displayArrays()
     Serial.print(" ");
     Serial.print(windgust_10m[i]);
   }
+  /*
   digitalWrite(LED2, HIGH);
   delay(25);
   digitalWrite(LED2, LOW);
-
+  */
   //Wind speed avg for past 2 minutes
   /*Serial.println();
    Serial.print("Wind 2 min avg:");
@@ -409,7 +405,7 @@ void calcWeather()
 
   //Calc humidity
   humidity = myHumidity.readHumidity();
-  float temp_h = myHumidity.readTemperature();
+  //float temp_h = myHumidity.readTemperature();
   //Serial.print(" TempH:");
   //Serial.print(temp_h, 2);
 
@@ -571,7 +567,7 @@ void reportWeather()
   Serial.println("#,");
 
   //Test string
-  Serial.println("$,winddir=270,windspeedmph=0.0,windgustmph=0.0,windgustdir=0,windspdmph_avg2m=0.0,winddir_avg2m=12,windgustmph_10m=0.0,windgustdir_10m=0,humidity=998.0,tempf=-1766.2,rainin=0.00,dailyrainin=0.00,-999.00,batt_lvl=16.11,light_lvl=3.32,#,");
+  //Serial.println("$,winddir=270,windspeedmph=0.0,windgustmph=0.0,windgustdir=0,windspdmph_avg2m=0.0,winddir_avg2m=12,windgustmph_10m=0.0,windgustdir_10m=0,humidity=998.0,tempf=-1766.2,rainin=0.00,dailyrainin=0.00,-999.00,batt_lvl=16.11,light_lvl=3.32,#,");
 }
 
 //Takes an average of readings on a given pin
