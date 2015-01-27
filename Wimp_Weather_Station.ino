@@ -1,5 +1,5 @@
 /* 
- Revision: 1.13.15
+ Revision: 1.26.15
  Weather Station using the Electric Imp
  Fork of Nathan Seidle Git of
  SparkFun Electronics
@@ -43,6 +43,7 @@ HTU21D myHumidity; //Create an instance of the humidity sensor
 const byte WSPEED = 3;
 const byte RAIN = 2;
 const byte LED1 = 7;
+const byte LED2 = 8;
 
 //#ifdef ENABLE_LIGHTNING
 //const byte LIGHTNING_IRQ = 4; //Not really an interrupt pin, we will catch it in software
@@ -166,6 +167,7 @@ void setup()
   pinMode(REFERENCE_3V3, INPUT);  // A3
 
   pinMode(LED1, OUTPUT);  // Pin 7
+  pinMode(LED2, OUTPUT);  // Pin 8
 
   midnightReset(); //Reset rain totals
 
@@ -178,14 +180,15 @@ void setup()
 
   //Configure the humidity sensor
   myHumidity.begin();
-
-#ifdef ENABLE_LIGHTNING
-  startLightning(); //Init the lighting sensor
-#endif
-
   seconds = 0;
   lastSecond = millis();
 
+  /*
+  #ifdef ENABLE_LIGHTNING
+    startLightning(); //Init the lighting sensor
+  #endif
+  */
+  
   // attach external interrupt pins to IRQ functions
   attachInterrupt(0, rainIRQ, FALLING);
   attachInterrupt(1, wspeedIRQ, FALLING);
@@ -193,10 +196,10 @@ void setup()
   // turn on interrupts
   interrupts();
 
-  Serial.println("Wimp Weather Station online!");
+  Serial.println("Blue Diamond Weather Station online!");
   reportWeather();
 
-  wdt_enable(WDTO_1S); //Unleash the beast
+  //wdt_enable(WDTO_1S); //Unleash the beast
 }
 
 void loop()
@@ -307,7 +310,7 @@ void loop()
   if(minutesSinceLastReset > (1440 + 10))
   {
     midnightReset(); //Reset a bunch of variables like rain and daily total rain
-    Serial.print("Emergency midnight reset");
+    //Serial.print("Emergency midnight reset");
   }
 
   delay(100); //Update every 100ms. No need to go any faster.
@@ -329,6 +332,9 @@ void displayArrays()
     Serial.print(" ");
     Serial.print(windgust_10m[i]);
   }
+  digitalWrite(LED2, HIGH);
+  delay(25);
+  digitalWrite(LED2, LOW);
 
   //Wind speed avg for past 2 minutes
   /*Serial.println();
@@ -403,7 +409,7 @@ void calcWeather()
 
   //Calc humidity
   humidity = myHumidity.readHumidity();
-  //float temp_h = myHumidity.readTemperature();
+  float temp_h = myHumidity.readTemperature();
   //Serial.print(" TempH:");
   //Serial.print(temp_h, 2);
 
@@ -480,8 +486,8 @@ float get_wind_speed()
   lastWindCheck = millis();
 
   windSpeed *= 1.492; //4 * 1.492 = 5.968MPH
-
-  /* Serial.println();
+/*
+   Serial.println();
    Serial.print("Windspeed:");
    Serial.println(windSpeed);*/
 
