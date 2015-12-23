@@ -391,10 +391,10 @@ strCT += "+" + format("%02d", currentTime.hour) + "%3A" + format("%02d", current
     server.log(batt_lvl + " " + light_lvl);
 
     //Get the local time that this measurement was taken
-    local localMeasurementTime = "measurementtime=" + calcLocalTime();
+    local localMeasurementtime = "measurementtime=" + calcLocalTime();
 
     //Now post to data.sparkfun.com
-    //Here is a list of datums: measurementTime, winddir, windspeedmph, windgustmph, windgustdir, windspdmph_avg2m, winddir_avg2m, windgustmph_10m, windgustdir_10m, humidity, tempf, rainin, dailyrainin, baromin, dewptf, batt_lvl, light_lvl
+    //Here is a list of datums: measurementtime, winddir, windspeedmph, windgustmph, windgustdir, windspdmph_avg2m, winddir_avg2m, windgustmph_10m, windgustdir_10m, humidity, tempf, rainin, dailyrainin, baromin, dewptf, batt_lvl, light_lvl
 
     //Now we form the large string to pass to sparkfun
     local strSparkFun = "http://data.sparkfun.com/input/";
@@ -403,7 +403,7 @@ strCT += "+" + format("%02d", currentTime.hour) + "%3A" + format("%02d", current
     bigString = strSparkFun;
     bigString += sparkfun_publicKey;
     bigString += "?" + privateKey;
-    bigString += "&" + localMeasurementTime;
+    bigString += "&" + localMeasurementtime;
     bigString += "&" + winddir;
     bigString += "&" + windspeedmph;
     bigString += "&" + windgustmph;
