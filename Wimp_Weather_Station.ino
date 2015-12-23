@@ -92,7 +92,8 @@ volatile byte windClicks = 0;
 //Total rain over date (store one per day)
 
 byte windspdavg[120]; //120 bytes to keep track of 2 minute average
-int winddiravg[120]; //120 ints to keep track of 2 minute average
+#define WIND_DIR_AVG_SIZE 120
+int winddiravg[WIND_DIR_AVG_SIZE]; //120 ints to keep track of 2 minute average
 float windgust_10m[10]; //10 floats to keep track of largest gust in the last 10 minutes
 int windgustdirection_10m[10]; //10 ints to keep track of 10 minute max
 volatile float rainHour[60]; //60 floating numbers to keep track of 60 minutes of rain
